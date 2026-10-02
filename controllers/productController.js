@@ -5,7 +5,7 @@ const escapeRegex = (value) => {
 
 const addProduct = async (req, res, next) => {
   try {
-    const { name, price, stock } = req.body;
+    const { name, price, stock, category } = req.body;
 
     if (!name) {
       return res.status(400).json({
@@ -28,10 +28,18 @@ const addProduct = async (req, res, next) => {
       });
     }
 
+    if (!category || typeof category !== "string" || !category.trim()) {
+      return res.status(400).json({
+        succcess: false,
+        message: "Category is required and must be a non-empty string",
+      });
+    }
+
     const newProduct = new Product({
       name,
       price,
       stock,
+      category,
     });
 
     await newProduct.save();
@@ -169,7 +177,7 @@ const getProduct = async (req, res, next) => {
     }
 
     //Validate sorting
-    const allowedSortFields = ["name", "price", "stock", "_id"];
+    const allowedSortFields = ["name", "price", "stock", "category", "_id"];
     if (!allowedSortFields.includes(sortBy)) {
       return res.status(400).json({
         success: false,
@@ -244,6 +252,19 @@ const getProduct = async (req, res, next) => {
       };
     }
 
+    //Category Filter
+    const category = req.query.category;
+
+    if (category !== undefined) {
+      if (typeof category !== "string" || !category.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Category must be a non-empty string",
+        });
+      }
+      filter.category = category.trim().toLowerCase();
+    }
+
     const sortOrder = order === "asc" ? 1 : -1;
     const sortOptions = { [sortBy]: sortOrder };
     if (sortBy !== "_id") {
@@ -281,6 +302,42 @@ const getProduct = async (req, res, next) => {
   }
 };
 
+//Low stock alert code
+const getLowStockProducts = async (req, res, next) => {
+  try {
+    const thresholdQuery = req.query.threshold;
+    let threshold = 5; // Default threshold
+
+    if (thresholdQuery !== undefined) {
+      const parsedThreshold = Number(thresholdQuery);
+      if (
+        isNaN(parsedThreshold) ||
+        parsedThreshold < 0 ||
+        !Number.isInteger(parsedThreshold)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Threshold must be a non-negative integer",
+        });
+      }
+      threshold = parsedThreshold;
+    }
+
+    const lowStockProducts = await Product.find({
+      stock: { $lte: threshold },
+    }).sort({ stock: 1 });
+
+    res.status(200).json({
+      success: true,
+      message: `Products with stock less than or equal to ${threshold}`,
+      count: lowStockProducts.length,
+      data: lowStockProducts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getProductById = async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -308,7 +365,7 @@ const updateProduct = async (req, res, next) => {
   try {
     const id = req.params.id;
 
-    const { name, price, stock } = req.body;
+    const { name, price, stock, category } = req.body;
 
     if (!name) {
       return res.status(400).json({
@@ -331,10 +388,18 @@ const updateProduct = async (req, res, next) => {
       });
     }
 
+    if (!category || typeof category !== "string" || !category.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Category is required and must be a non-empty string",
+      });
+    }
+
     const updateData = {
       name,
       price,
       stock,
+      category,
     };
 
     const product = await Product.findByIdAndUpdate(id, updateData, {
@@ -383,10 +448,10 @@ const deleteProduct = async (req, res, next) => {
 
 const patchProduct = async (req, res, next) => {
   try {
-      const id = req.params.id;
+    const id = req.params.id;
 
-    const { name, price, stock } = req.body;
-    
+    const { name, price, stock, category } = req.body;
+
     if (name !== undefined && (typeof name !== "string" || !name.trim())) {
       return res.status(400).json({
         success: false,
@@ -394,34 +459,44 @@ const patchProduct = async (req, res, next) => {
       });
     }
 
-      if (price !== undefined && (typeof price !== "number" || price < 0)) {
-        return res.status(400).json({
-          success: false,
-          message: "Price must be a non-negative number",
-        });
-      }
-
-      if (stock !== undefined && (typeof stock !== "number" || stock < 0)) {
-        return res.status(400).json({
-          success: false,
-          message: "Stock must be a non-negative number",
-        });
-      }
-
-      const updateData = {};
-
-      if (name !== undefined) {
-        updateData.name = name;
-      }
-
-      if (price !== undefined) {
-        updateData.price = price;
-      }
-
-      if (stock !== undefined) {
-        updateData.stock = stock;
+    if (price !== undefined && (typeof price !== "number" || price < 0)) {
+      return res.status(400).json({
+        success: false,
+        message: "Price must be a non-negative number",
+      });
     }
-    
+
+    if (stock !== undefined && (typeof stock !== "number" || stock < 0)) {
+      return res.status(400).json({
+        success: false,
+        message: "Stock must be a non-negative number",
+      });
+    }
+
+    if (category !== undefined && (typeof category !== "string" || !category.trim())){
+      return res.status(400).json({
+        success: false,
+        message: "Category must be a non-empty string",
+      });
+    }
+
+    const updateData = {};
+
+    if (name !== undefined) {
+      updateData.name = name;
+    }
+
+    if (price !== undefined) {
+      updateData.price = price;
+    }
+
+    if (stock !== undefined) {
+      updateData.stock = stock;
+    }
+    if (category !== undefined) {
+      updateData.category = category;
+    }
+
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({
         success: false,
@@ -429,28 +504,27 @@ const patchProduct = async (req, res, next) => {
       });
     }
 
-      const product = await Product.findByIdAndUpdate(id, updateData, {
-        new: true,
-        runValidators: true,
-      });
+    const product = await Product.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          message: "Product not found",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Product updated successfully",
-        data: product,
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
       });
-    } catch (error) {
-      next(error);
-    };
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Product updated successfully",
+      data: product,
+    });
+  } catch (error) {
+    next(error);
   }
-
+};
 
 module.exports = {
   addProduct,
@@ -458,5 +532,6 @@ module.exports = {
   getProductById,
   updateProduct,
   deleteProduct,
-  patchProduct
+  patchProduct,
+  getLowStockProducts,
 };
