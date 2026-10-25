@@ -8,7 +8,11 @@ const {
   deleteProduct,
   patchProduct,
   getLowStockProducts,
+  getProductCategories,
 } = require("../controllers/productController");
+
+const { protect } = require("../middleware/authMiddleware");
+const { authorize } = require("../middleware/authorize");
 
 /**
  * @openapi
@@ -146,8 +150,11 @@ const {
  *       400:
  *         description: Invalid query parameters
  */
-router.post("/products", addProduct);
+router.post("/products", protect, authorize("admin"), addProduct);
+
 router.get("/products", getProduct);
+
+router.get("/products/categories", getProductCategories);
 
 /**
  * @openapi
@@ -263,8 +270,11 @@ router.get("/products/low-stock", getLowStockProducts);
  *         description: Product not found
  */
 router.get("/products/:id", getProductById);
-router.put("/products/:id", updateProduct);
-router.patch("/products/:id", patchProduct);
-router.delete("/products/:id", deleteProduct);
+
+router.put("/products/:id", protect, authorize("admin"), updateProduct);
+
+router.patch("/products/:id", protect, authorize("admin"), patchProduct);
+
+router.delete("/products/:id", protect, authorize("admin"), deleteProduct);
 
 module.exports = router;

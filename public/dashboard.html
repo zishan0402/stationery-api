@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Stationery Inventory</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body class="dashboard-page">
+    <div class="dashboard-layout">
+
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">K</div>
+                <span>Khushi Stationery</span>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Main navigation">
+                <a href="/dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="#products" class="nav-link">Products</a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <p id="sidebarUser">Signed in</p>
+                <button id="logoutButton" type="button">Log out</button>
+            </div>
+        </aside>
+
+        <main class="dashboard-main">
+            <header class="dashboard-header">
+                <div>
+                    <p class="eyebrow">INVENTORY MANAGEMENT</p>
+                    <h1>Dashboard</h1>
+                    <p class="dashboard-subtitle">Here's what's happening in your store.</p>
+                </div>
+                <span id="userRole" class="role-label">Loading role...</span>
+            </header>
+
+            <section class="summary-grid" aria-label="Inventory summary">
+                <article class="summary-card">
+                    <p>Total products</p>
+                    <h2 id="totalProducts">—</h2>
+                    <span>Products in inventory</span>
+                </article>
+
+                <article class="summary-card">
+                    <p>Total units in stock</p>
+                    <h2 id="totalUnits">—</h2>
+                    <span>Units across all products</span>
+                </article>
+
+                <article class="summary-card">
+                    <p>Low-stock products</p>
+                    <h2 id="lowStockCount">—</h2>
+                    <span>Products needing attention</span>
+                </article>
+            </section>
+
+            <section id="products" class="products-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>Products</h2>
+                        <p>View your stationery inventory.</p>
+                    </div>
+
+                <!-- Product Search Input -->
+                <div class="product-search">
+                    <label for="productSearch">Search products</label>
+                    <input type="search" id="productSearch" placeholder="Search by product name or category..." autocomplete="off" />
+                </div>
+                
+                <!-- Product Sort Dropdown -->
+                <div class="product-sort">
+                    <label for="productSort">Sort products</label>
+                    <select id="productSort">
+                        <option value="default">Default order</option>
+                        <option value="name-asc">Name: A to Z</option>
+                        <option value="name-desc">Name: Z to A</option>
+                        <option value="price-asc">Price: Low to High</option>
+                        <option value="price-desc">Price: High to Low</option>
+                        <option value="stock-asc">Stock: Low to High</option>
+                        <option value="stock-desc">Stock: High to Low</option>
+                    </select>
+                </div>
+
+                <!-- Product Category Filter -->
+                <div class="product-filter">
+                    <label for="productCategory">Filter by category</label>
+                    <select id="productCategory">
+                        <option value="all">All categories</option>
+                    </select>
+                </div>
+
+
+
+                    <!-- Add product Button -->
+                    <button id="addProductButton" type="button" hidden>
+                        + Add product
+                    </button>
+
+                    <form id="addProductForm" hidden>
+                        <h3>Add a new product</h3>
+                    
+                        <label for="productName">Product name</label>
+                        <input type="text" id="productName" name="name" minlength="5" required>
+                    
+                        <label for="productCategory">Category</label>
+                        <input type="text" id="productCategory" name="category" required>
+                    
+                        <label for="productPrice">Price (₹)</label>
+                        <input type="number" id="productPrice" name="price" min="0" step="0.01" required>
+                    
+                        <label for="productStock">Stock quantity</label>
+                        <input type="number" id="productStock" name="stock" min="0" step="1" required>
+                    
+                        <button type="submit" id="saveProductButton">
+                            Save product
+                        </button>
+                    
+                        <button type="button" id="cancelProductButton">
+                            Cancel
+                        </button>
+                    
+                        <p id="productFormMessage" role="status" aria-live="polite"></p>
+                    </form>
+
+                    <!-- Edit form button...-->
+                    <form id="editProductForm" hidden>
+                        <h3>Edit product</h3>
+                    
+                        <input type="hidden" id="editProductId">
+                    
+                        <label for="editProductName">Product name</label>
+                        <input type="text" id="editProductName" name="name" minlength="5" required>
+                    
+                        <label for="editProductCategory">Category</label>
+                        <input type="text" id="editProductCategory" name="category" required>
+                    
+                        <label for="editProductPrice">Price (₹)</label>
+                        <input type="number" id="editProductPrice" name="price" min="0" step="0.01" required>
+                    
+                        <label for="editProductStock">Stock quantity</label>
+                        <input type="number" id="editProductStock" name="stock" min="0" step="1" required>
+                    
+                        <button type="submit" id="updateProductButton">
+                            Update product
+                        </button>
+                    
+                        <button type="button" id="cancelEditButton">
+                            Cancel
+                        </button>
+                    
+                        <p id="editProductMessage" role="status" aria-live="polite"></p>
+                    </form>
+
+
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTableBody">
+                            <tr>
+                                <td colspan="5">Loading products...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Product Pagination -->
+                    <div class="pagination" id="productPagination">
+                        <p id="paginationInfo">Showing products...</p>
+                    
+                        <div class="pagination-controls">
+                            <button id="previousPageButton" type="button" disabled>
+                                ← Previous
+                            </button>
+                    
+                            <span id="currentPageInfo">Page 1 of 1</span>
+                    
+                            <button id="nextPageButton" type="button" disabled>
+                                Next →
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <p id="dashboardMessage" role="status" aria-live="polite"></p>
+            </section>
+        </main>
+
+    </div>
+
+    <script src="/dashboard.js"></script>
+</body>
+
+</html>

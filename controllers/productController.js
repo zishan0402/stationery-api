@@ -338,6 +338,24 @@ const getLowStockProducts = async (req, res, next) => {
   }
 };
 
+const getProductCategories = async (req, res, next) => {
+  try {
+    const categories = await Product.distinct("category");
+
+    const filteredCategories = categories
+      .filter((category) => typeof category === "string" && category.trim())
+      .sort((a, b) => a.localeCompare(b));
+
+    res.status(200).json({
+      success: true,
+      message: "Product categories fetched successfully",
+      data: filteredCategories,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getProductById = async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -534,4 +552,5 @@ module.exports = {
   deleteProduct,
   patchProduct,
   getLowStockProducts,
+  getProductCategories,
 };

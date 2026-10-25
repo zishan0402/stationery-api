@@ -1,71 +1,90 @@
-const dns = require('dns');
+const dns = require("dns");
 
-dns.setServers(['8.8.8.8']);
+dns.setServers(["8.8.8.8"]);
 
-require('dotenv').config();
+require("dotenv").config();
 
-const express = require('express');
-const mongoose = require('mongoose');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
+const express = require("express");
+const path = require("path");
+const mongoose = require("mongoose");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsdoc = require("swagger-jsdoc");
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-const productRoutes = require('./routes/productRoutes');
-const errorHandler = require('./utils/errorHandler');
+const productRoutes = require("./routes/productRoutes");
+const authRoutes = require("./routes/authRoutes");
+const errorHandler = require("./utils/errorHandler");
 
-//Security Middelware: Set HTTP headers
+// Security: HTTP headers
 app.use(helmet());
 
-// Secuirty Middleware: Rate limiting (100 requests per 15 minutes per IP)
+// Security: API rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: {
     success: false,
-    message: "Too many requests from this IP, please try again after 15 minutes"
+    message:
+      "Too many requests from this IP. Please try again after 15 minutes.",
   },
 });
 
-app.use('/api', limiter)
+app.use("/api", limiter);
+
+// Parse JSON request bodies
 app.use(express.json());
 
-//Swagger Options
+// Serve frontend files from the public directory
+app.use(express.static(path.join(__dirname, "public")));
+
+// Authentication routes
+app.use("/api/auth", authRoutes);
+
+// Swagger configuration
 const swaggerOptions = {
   definition: {
-    openapi: '3.0.0',
+    openapi: "3.0.0",
     info: {
-      title: 'Stationery Inventory REST API',
-      version: '1.0.0',
-      description: 'A robust Node.js, Express, and MongoDB REST API for managing stationery products',
+      title: "Stationery Inventory REST API",
+      version: "1.0.0",
+      description:
+        "A Node.js, Express, and MongoDB REST API for managing stationery products",
     },
-    server: [
+    servers: [
       {
         url: `http://localhost:${port}`,
-        description: 'Development Server',
+        description: "Development server",
       },
     ],
   },
-  apis: ['./routes/*.js'],
+  apis: ["./routes/*.js"],
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-app.use('/api', productRoutes);
+// Product API routes
+app.use("/api", productRoutes);
+
+// Central error handler (keep after routes)
 app.use(errorHandler);
 
-mongoose.connect(process.env.MONGO_URI)
-.then(() => {
-  console.log("MongoDB connected successfully");
-})
-.catch((error) => {
-  console.log("MongoDB connection failed:", error.message);
-});
+// Connect to MongoDB, then start the server
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB connected successfully");
 
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
-});
+    app.listen(port, () => {
+      console.log(`Server running at http://localhost:${port}`);
+      console.log(`Frontend directory: ${path.join(__dirname, "public")}`);
+    });
+  })
+  .catch((error) => {
+    console.error("MongoDB connection failed:", error.message);
+    process.exit(1);
+  });
