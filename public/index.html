@@ -1,0 +1,456 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Discover stationery essentials for school, college, and work at Khushi Stationery.">
+    <title>Khushi Stationery | Your Everyday Essentials</title>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --text: #172033;
+            --muted: #64748b;
+            --background: #f8fafc;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--text);
+            background: white;
+            line-height: 1.6;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        button {
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .container {
+            width: min(1120px, 92%);
+            margin: 0 auto;
+        }
+
+        /* Navigation */
+        .navbar {
+            border-bottom: 1px solid var(--border);
+            background: white;
+        }
+
+        .nav-content {
+            min-height: 76px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.7px;
+        }
+
+        .brand span {
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .cart-link {
+            border: 1px solid var(--border);
+            padding: 9px 16px;
+            border-radius: 9px;
+            color: var(--text) !important;
+            font-weight: 600;
+        }
+
+        /* Hero section */
+        .hero {
+            padding: 76px 0;
+            background: linear-gradient(135deg, #eff6ff, #f8fafc 70%);
+        }
+
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            align-items: center;
+            gap: 48px;
+        }
+
+        .eyebrow {
+            display: inline-block;
+            color: var(--primary-dark);
+            background: #dbeafe;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.4rem, 5vw, 4rem);
+            line-height: 1.12;
+            letter-spacing: -2px;
+            max-width: 600px;
+        }
+
+        .hero h1 span {
+            color: var(--primary);
+        }
+
+        .hero p {
+            color: var(--muted);
+            font-size: 1.05rem;
+            max-width: 490px;
+            margin: 22px 0 28px;
+        }
+
+        .primary-button {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 13px 22px;
+            border-radius: 9px;
+            border: none;
+            font-weight: 700;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .primary-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .hero-visual {
+            min-height: 300px;
+            border-radius: 24px;
+            background: #dbeafe;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            overflow: hidden;
+        }
+
+        .hero-visual img {
+            display: block;
+            width: 100%;
+            max-width: 390px;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            border-radius: 16px;
+        }
+
+        /* Benefits */
+        .benefits {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 30px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .benefit {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .benefit-icon {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            background: #eff6ff;
+            border-radius: 12px;
+            font-size: 1.3rem;
+        }
+
+        .benefit strong {
+            display: block;
+            font-size: 0.94rem;
+        }
+
+        .benefit small {
+            color: var(--muted);
+        }
+
+        /* Products */
+        .products-section {
+            padding: 64px 0;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .section-heading h2 {
+            font-size: 1.9rem;
+            letter-spacing: -0.7px;
+        }
+
+        .section-heading p {
+            color: var(--muted);
+            margin-top: 5px;
+        }
+
+        .text-link {
+            color: var(--primary);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 22px;
+        }
+
+        .product-card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            background: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+        }
+
+        .product-image {
+            min-height: 170px;
+            display: grid;
+            place-items: center;
+            background: var(--background);
+            font-size: 4rem;
+        }
+
+        .product-info {
+            padding: 17px;
+        }
+
+        .product-info h3 {
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .product-category {
+            color: var(--muted);
+            font-size: 0.83rem;
+            text-transform: capitalize;
+        }
+
+        .product-price {
+            font-weight: 800;
+            color: var(--primary-dark);
+            font-size: 1.1rem;
+            margin-top: 12px;
+        }
+
+        .product-placeholder {
+            grid-column: 1 / -1;
+            padding: 32px;
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 28px 0;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        @media (max-width: 800px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+
+            .hero {
+                padding: 48px 0;
+            }
+
+            .hero-visual {
+                min-height: 220px;
+            }
+
+            .product-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .benefits {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .nav-content {
+                min-height: 66px;
+                flex-wrap: wrap;
+                padding: 12px 0;
+                gap: 12px;
+            }
+
+            .brand {
+                font-size: 1.2rem;
+            }
+
+            .nav-links {
+                width: 100%;
+                justify-content: space-between;
+                gap: 10px;
+                font-size: 0.85rem;
+            }
+
+            .hero h1 {
+                letter-spacing: -1px;
+            }
+
+            .section-heading h2 {
+                font-size: 1.5rem;
+            }
+
+            .product-grid {
+                gap: 12px;
+            }
+
+            .product-image {
+                min-height: 130px;
+                font-size: 3rem;
+            }
+
+            .product-info {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="container nav-content">
+            <a href="/" class="brand">Khushi <span>Stationery.</span></a>
+
+            <nav class="nav-links" aria-label="Main navigation">
+                <a href="/">Home</a>
+                <a href="/shop.html">Shop</a>
+                <a href="#featured">Featured</a>
+                <a href="/cart.html" class="cart-link">Cart (0)</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container hero-content">
+                <div>
+                    <span class="eyebrow">YOUR EVERYDAY ESSENTIALS</span>
+
+                    <h1>Make every idea <span>come to life.</span></h1>
+
+                    <p>
+                        From everyday pens to notebooks and school essentials,
+                        find the stationery you need to learn, create, and achieve more.
+                    </p>
+
+                    <a href="/shop.html" class="primary-button">Explore Products →</a>
+                </div>
+
+                <div class="hero-visual">
+                    <img src="https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=900&q=80"
+                        alt="Notebook and writing essentials on a desk" fetchpriority="high">
+                </div>
+            </div>
+        </section>
+
+        <section class="container benefits" aria-label="Shop benefits">
+            <div class="benefit">
+                <div class="benefit-icon">📚</div>
+                <div>
+                    <strong>Everyday Essentials</strong>
+                    <small>For school, college, and work</small>
+                </div>
+            </div>
+
+            <div class="benefit">
+                <div class="benefit-icon">🖨️</div>
+                <div>
+                    <strong>Printing Services</strong>
+                    <small>Printouts and lamination</small>
+                </div>
+            </div>
+
+            <div class="benefit">
+                <div class="benefit-icon">✍️</div>
+                <div>
+                    <strong>Here to Help</strong>
+                    <small>Resume and online form assistance</small>
+                </div>
+            </div>
+        </section>
+
+        <section class="container products-section" id="featured">
+            <div class="section-heading">
+                <div>
+                    <h2>Featured Products</h2>
+                    <p>Everyday essentials, all in one place.</p>
+                </div>
+
+                <a href="/shop.html" class="text-link">View all →</a>
+            </div>
+
+            <div class="product-grid" id="featuredProducts">
+                <p class="product-placeholder">Our products will appear here soon.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">

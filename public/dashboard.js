@@ -29,10 +29,19 @@ if (!token || !storedUser) {
     const cancelProductButton = document.getElementById("cancelProductButton");
 
     addProductButton.addEventListener("click", () => {
+      // Clear the previous dashboard message.
+      const dashboardMessage = document.getElementById("dashboardMessage");
+      dashboardMessage.textContent = "";
+      dashboardMessage.className = "";
+
+      // Clear any previous form message.
+      productFormMessage.textContent = "";
+      productFormMessage.className = "";
+
+      // Show the Add Product form.
       addProductForm.hidden = false;
       addProductButton.hidden = true;
     });
-
     cancelProductButton.addEventListener("click", () => {
       addProductForm.reset();
       addProductForm.hidden = true;
@@ -116,9 +125,18 @@ async function loadProducts() {
       return total + Number(product.stock || 0);
     }, 0);
 
-    const lowStockCount = products.filter((product) => {
-      return Number(product.stock) <= 5;
-    }).length;
+    const lowStockResponse = await fetch("/api/products/low-stock", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const lowStockResult = await lowStockResponse.json();
+    if (!lowStockResponse.ok || !lowStockResult.success) {
+      throw new Error("Unable to load low-stock products.");
+    }
+
+    const lowStockCount = lowStockResult.count;
 
     document.getElementById("totalProducts").textContent =
       result.pagination.totalProducts;
@@ -156,7 +174,6 @@ async function loadProducts() {
     }
 
     renderProducts(products);
-
   } catch (error) {
     console.error("Error loading products:", error);
     productTableBody.innerHTML = `
@@ -200,7 +217,24 @@ function renderProducts(products) {
     priceCell.textContent = `₹${Number(product.price).toFixed(2)}`;
 
     const stockCell = document.createElement("td");
-    stockCell.textContent = String(product.stock ?? "");
+
+    const stockQuantity = Number(product.stock ?? 0);
+    stockCell.textContent = String(stockQuantity);
+
+    const stockBadge = document.createElement("span");
+
+    if (stockQuantity === 0) {
+      stockBadge.className = "stock-badge out-of-stock";
+      stockBadge.textContent = "Out of Stock";
+    } else if (stockQuantity <= 5) {
+      stockBadge.className = "stock-badge low-stock";
+      stockBadge.textContent = "Low Stock";
+    } else {
+      stockBadge.className = "stock-badge in-stock";
+      stockBadge.textContent = "In Stock";
+    }
+    stockCell.appendChild(document.createElement("br"));
+    stockCell.appendChild(stockBadge);
 
     const actionsCell = document.createElement("td");
 
@@ -285,7 +319,6 @@ function applyProductFilters() {
   renderProducts(filteredProducts);
 }
 
-
 async function populateCategoryFilter() {
   const categoryFilter = document.getElementById("productCategory");
   const selectedCategory = categoryFilter.value;
@@ -328,7 +361,6 @@ async function populateCategoryFilter() {
     console.error("Error loading categories:", error);
   }
 }
-
 
 // Reapply filtering and sorting whenever the search changes.
 productSearch.addEventListener("input", () => {
@@ -375,7 +407,7 @@ addProductForm.addEventListener("submit", async (event) => {
 
   const product = {
     name: document.getElementById("productName").value.trim(),
-    category: document.getElementById("productCategory").value.trim(),
+    category: document.getElementById("newProductCategory").value.trim(),
     price: Number(document.getElementById("productPrice").value),
     stock: Number(document.getElementById("productStock").value),
   };
@@ -396,10 +428,13 @@ addProductForm.addEventListener("submit", async (event) => {
       throw new Error(result.message || "Could not create product");
     }
 
-    //Success message
-    productFormMessage.textContent = "Product added successfully!";
-    productFormMessage.className = "success";
+    // Show success message on the dashboard.
+    const dashboardMessage = document.getElementById("dashboardMessage");
 
+    dashboardMessage.textContent = "Product added successfully!";
+    dashboardMessage.className = "success";
+
+    // Clear the form and close it.
     addProductForm.reset();
     addProductForm.hidden = true;
     document.getElementById("addProductButton").hidden = false;
@@ -570,3 +605,69 @@ document.getElementById("cancelEditButton").addEventListener("click", () => {
     document.getElementById("addProductButton").hidden = false;
   }
 });
+
+async function loadStockHistory() {
+  const stockHistoryTableBody = document.getElementById(
+    "stockHistoryTableBody",
+  );
+
+  const stockHistoryMessage = document.getElementById("stockHistoryMessage");
+
+  try {
+    const response = await fetch("/api/stock-history", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Failed to load stock history");
+    }
+
+    stockHistoryTableBody.replaceChildren();
+
+    if (result.data.length === 0) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+
+      cell.colSpan = 7;
+      cell.textContent = "No stock history found.";
+
+      row.appendChild(cell);
+      stockHistoryTableBody.appendChild(row);
+      return;
+    }
+
+    result.data.forEach((item) => {
+      const row = document.createElement("tr");
+
+      const values = [
+        item.product?.name || "Deleted product",
+        item.previousStock,
+        item.newStock,
+        item.quantityChanged > 0
+          ? `+${item.quantityChanged}`
+          : String(item.quantityChanged),
+        item.reason || "—",
+        item.performedBy?.name || "Unknown user",
+        new Date(item.createdAt).toLocaleString(),
+      ];
+
+      values.forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = String(value);
+        row.appendChild(cell);
+      });
+
+      stockHistoryTableBody.appendChild(row);
+    });
+  } catch (error) {
+    console.error("Error loading stock history:", error);
+    stockHistoryMessage.textContent = error.message;
+    stockHistoryMessage.className = "error";
+  }
+}
+
+loadStockHistory();

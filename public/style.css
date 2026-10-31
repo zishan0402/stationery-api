@@ -353,6 +353,7 @@ body {
 
 .products-section {
     padding: 26px;
+    margin-bottom: 16px;
     border: 1px solid #e7ebf2;
     border-radius: 14px;
     background: #ffffff;
@@ -974,4 +975,34 @@ tbody tr:last-child td {
         min-width: 82px;
         font-size: 12px;
     }
+}
+
+
+/* Stock status badges */
+.stock-badge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.stock-badge.low-stock {
+    color: #78350f;
+    background-color: #fef3c7;
+    border: 1px solid #fde68a;
+}
+
+.stock-badge.in-stock {
+    color: #166534;
+    background-color: #dcfce7;
+    border: 1px solid #bbf7d0;
+}
+
+.stock-badge.out-of-stock {
+    color: #7f1d1d;
+    background-color: #fecaca;
+    border: 1px solid #f87171;
 }

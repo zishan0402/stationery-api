@@ -1,9 +1,15 @@
 const Product = require("../models/Product");
+const stockMovement = require("../models/stockMovement");
+
+const mongoose = require("mongoose");
+
 const escapeRegex = (value) => {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 };
 
 const addProduct = async (req, res, next) => {
+  let session;
+
   try {
     const { name, price, stock, category } = req.body;
 
@@ -30,27 +36,56 @@ const addProduct = async (req, res, next) => {
 
     if (!category || typeof category !== "string" || !category.trim()) {
       return res.status(400).json({
-        succcess: false,
+        success: false,
         message: "Category is required and must be a non-empty string",
       });
     }
 
-    const newProduct = new Product({
-      name,
-      price,
-      stock,
-      category,
+    session = await mongoose.startSession();
+
+    let newProduct;
+
+    await session.withTransaction(async () => {
+      const [createdProduct] = await Product.create(
+        [
+          {
+            name,
+            price,
+            stock,
+            category,
+          },
+        ],
+        { session },
+      );
+
+      await stockMovement.create(
+        [
+          {
+            product: createdProduct._id,
+            previousStock: 0,
+            newStock: stock,
+            quantityChanged: stock,
+            reason: "Initial stock",
+            performedBy: req.user._id,
+          },
+        ],
+        { session },
+      );
+
+      newProduct = createdProduct;
     });
 
-    await newProduct.save();
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Product added successfully",
       data: newProduct,
     });
   } catch (error) {
     next(error);
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
   }
 };
 
@@ -356,6 +391,25 @@ const getProductCategories = async (req, res, next) => {
   }
 };
 
+const getStockHistory = async (req, res, next) => {
+  try {
+    const history = await stockMovement
+      .find()
+      .populate("product", "name")
+      .populate("performedBy", "name")
+      .sort({ createAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      message: "Stock history fetched successfully",
+      count: history.lenght,
+      data: history,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getProductById = async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -380,11 +434,13 @@ const getProductById = async (req, res, next) => {
 };
 
 const updateProduct = async (req, res, next) => {
+  let session;
+
   try {
     const id = req.params.id;
-
     const { name, price, stock, category } = req.body;
 
+    // Step 1: Validate the incoming data.
     if (!name) {
       return res.status(400).json({
         success: false,
@@ -413,32 +469,70 @@ const updateProduct = async (req, res, next) => {
       });
     }
 
-    const updateData = {
-      name,
-      price,
-      stock,
-      category,
-    };
+    // Step 2: Start a MongoDB transaction.
+    session = await mongoose.startSession();
 
-    const product = await Product.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
+    let updatedProduct = null;
+
+    await session.withTransaction(async () => {
+      // Step 3: Find the existing product.
+      const product = await Product.findById(id).session(session);
+
+      if (!product) {
+        return;
+      }
+
+      // Remember the stock before changing it.
+      const previousStock = product.stock;
+
+      // Step 4: Update the product fields.
+      product.name = name;
+      product.price = price;
+      product.stock = stock;
+      product.category = category;
+
+      await product.save({ session });
+
+      // Step 5: Create history only if stock changed.
+      if (previousStock !== stock) {
+        await stockMovement.create(
+          [
+            {
+              product: product._id,
+              previousStock,
+              newStock: stock,
+              quantityChanged: stock - previousStock,
+              reason: "Stock updated via product edit",
+              performedBy: req.user._id,
+            },
+          ],
+          { session },
+        );
+      }
+
+      updatedProduct = product;
     });
 
-    if (!product) {
+    // Step 6: Return 404 if the product doesn't exist.
+    if (!updatedProduct) {
       return res.status(404).json({
         success: false,
         message: "Product not found",
       });
     }
 
-    res.status(200).json({
+    // Step 7: Send the successful response.
+    return res.status(200).json({
       success: true,
       message: "Product updated successfully",
-      data: product,
+      data: updatedProduct,
     });
   } catch (error) {
     next(error);
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
   }
 };
 
@@ -465,6 +559,7 @@ const deleteProduct = async (req, res, next) => {
 };
 
 const patchProduct = async (req, res, next) => {
+  let session;
   try {
     const id = req.params.id;
 
@@ -491,7 +586,10 @@ const patchProduct = async (req, res, next) => {
       });
     }
 
-    if (category !== undefined && (typeof category !== "string" || !category.trim())){
+    if (
+      category !== undefined &&
+      (typeof category !== "string" || !category.trim())
+    ) {
       return res.status(400).json({
         success: false,
         message: "Category must be a non-empty string",
@@ -522,25 +620,64 @@ const patchProduct = async (req, res, next) => {
       });
     }
 
-    const product = await Product.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
+    session = await mongoose.startSession();
+
+    let updatedProduct = null;
+
+    await session.withTransaction(async () => {
+
+      const product = await Product.findById(id).session(session);
+
+      if (!product) {
+        return;
+      }
+
+      const previousStock = product.stock;
+
+      Object.assign(product, updateData);
+
+      await product.save({ session });
+
+      const quantityChanged = product.stock - previousStock;
+
+      if (quantityChanged !== 0) {
+        await stockMovement.create(
+          [
+          {
+            product: product._id,
+            previousStock,
+            newStock: product.stock,
+            quantityChanged,
+            reason: "Stock updated via partial edit",
+            performedBy: req.user._id,
+          },
+          ],
+          { session },
+        );
+      }
+      updatedProduct = product;
     });
 
-    if (!product) {
+    if (!updatedProduct) {
       return res.status(404).json({
         success: false,
         message: "Product not found",
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Product updated successfully",
-      data: product,
+      data: updatedProduct,
     });
   } catch (error) {
     next(error);
+  }
+
+  finally {
+    if (session) {
+      await session.endSession();
+    }
   }
 };
 
@@ -553,4 +690,5 @@ module.exports = {
   patchProduct,
   getLowStockProducts,
   getProductCategories,
+  getStockHistory,
 };

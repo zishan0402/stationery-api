@@ -9,6 +9,7 @@ const {
   patchProduct,
   getLowStockProducts,
   getProductCategories,
+  getStockHistory,
 } = require("../controllers/productController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -155,6 +156,8 @@ router.post("/products", protect, authorize("admin"), addProduct);
 router.get("/products", getProduct);
 
 router.get("/products/categories", getProductCategories);
+
+router.get("/stock-history", protect, getStockHistory);
 
 /**
  * @openapi
